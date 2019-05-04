@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <mpi.h>
 
-#define INFINITY 1000000;
+//#define INFINITY 1000000;
 
 void Read_matrix(int graph[], int n, int my_rank, int p,
       MPI_Comm comm);
@@ -48,16 +48,18 @@ void Print_local_matrix(int matrix[], int rows, int columns, int my_rank);
    Print_matrix(graph, n, my_rank, p, comm);
    //Shortest_path_floyd(graph, n, my_rank, p, comm);
    int i, j, k;
-   for(i=0; i< n-1; i++){
-      // MPI_Allreduce(MPI_IN_PLACE, &graph, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
-      for(j=0; j< n-1; j++){
-         for(k=0; k< n-1; k++){
-            graph[j*n+k]= min(graph[i*n+j], graph[i*n+k] + graph[k*n+j]);
+   for(k=0; k< n-1; k++){
+      for(i=0; i< n-1; i++){
+         for(j=0; j< n-1; j++){
+            graph[i*n+j]= min(graph[i*n+j], (graph[i*n+k] + graph[k*n+j]));
+            // printf("%d", graph[i*n+j]);
+            // printf("%d", graph[i*n+k]);
+            // printf("%d\n", graph[k*n+j]);
          }
       }
       MPI_Allreduce(MPI_IN_PLACE, &graph, 0, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
    }
-   printf("\n");
+   //printf("\n");
    Print_matrix(graph, n, my_rank, p, comm);
    free(graph);
    MPI_Finalize();
@@ -76,6 +78,7 @@ void Read_matrix(int graph[], int n, int my_rank, int p, MPI_Comm comm) {
             if(i==j)
                temp_mat[i*n+j]=0;
             else{
+               printf("Enter the edge weight from vertex %d to vertex %d:\n", i, j);
                scanf("%d", &temp_mat[i*n+j]);
             }
          }
@@ -96,10 +99,15 @@ void Print_matrix(int graph[], int n, int my_rank, int p, MPI_Comm comm) {
       temp_mat = malloc(n*n*sizeof(int));
       MPI_Gather(graph, n*n/p, MPI_INT,temp_mat, n*n/p, MPI_INT, 0, comm);
 
+      //printf("FROM");
       for (i = 0; i < n; i++) {
-
+         // if(i==0)
+         //    printf("FROM");
+         //printf("%d", +1);
          for (j = 0; j < n; j++){
-             printf("%d ", temp_mat[i*n+j]);
+             //printf("\nTO:\t%d\t \n", i);
+            //printf("TO %d:\t", j);
+            printf("%d ", temp_mat[i*n+j]);
          }
       printf("\n");
       }
@@ -134,8 +142,12 @@ void Print_local_matrix(int matrix[], int rows, int columns, int my_rank) {
 
 // }
 int min(int a, int b){
-   if(a<b)
+   if(a<b){
+      //printf("%d\n", a);
       return a;
-   else
+   }
+   else{
+      //printf("%d\n", b);
       return b;
+   }
 }
