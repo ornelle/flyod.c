@@ -12,6 +12,8 @@ void Print_matrix(int graph[], int n, int my_rank, int p,
 void Shortest_path_floyd(int graph[], int n, int my_rank, 
       int p, MPI_Comm comm);
 int min(int a, int b);
+void Print_local_matrix(int matrix[], int rows, int columns, int my_rank);
+
 
 
    int main(void) {
@@ -31,7 +33,7 @@ int min(int a, int b);
    }
 
    MPI_Bcast(&n, 1, MPI_INT, 0, comm);
-   graph = malloc(n*n/p*sizeof(int));
+   graph = calloc(n*n/p, sizeof(int));
 
     if (my_rank == 0){
       printf("Enter the local_matrix\n");
@@ -41,9 +43,22 @@ int min(int a, int b);
     if (my_rank == 0){
       printf("We got\n");
     }
-   Print_matrix(graph, n, my_rank, p, comm);
-   Shortest_path_floyd(graph, n, my_rank, p, comm);
 
+   //Print_local_matrix(graph, n, n, my_rank); 
+   Print_matrix(graph, n, my_rank, p, comm);
+   //Shortest_path_floyd(graph, n, my_rank, p, comm);
+   int i, j, k;
+   for(i=0; i< n-1; i++){
+      // MPI_Allreduce(MPI_IN_PLACE, &graph, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
+      for(j=0; j< n-1; j++){
+         for(k=0; k< n-1; k++){
+            graph[j*n+k]= min(graph[i*n+j], graph[i*n+k] + graph[k*n+j]);
+         }
+      }
+      MPI_Allreduce(MPI_IN_PLACE, &graph, 0, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
+   }
+   printf("\n");
+   Print_matrix(graph, n, my_rank, p, comm);
    free(graph);
    MPI_Finalize();
 
@@ -95,20 +110,29 @@ void Print_matrix(int graph[], int n, int my_rank, int p, MPI_Comm comm) {
    }
 }
 
-void Shortest_path_floyd(int graph[], int n, int my_rank, int p, MPI_Comm comm){
-
-   int i, j, k;
-   for(i=0; i< n-1; i++){
-      for(j=0; j< n-1; j++){
-         for(k=0; k< n-1; k++){
-            graph[j*n +k]= min(graph[i*n+j], graph[i*n+k] + graph[k*n+j]);
+void Print_local_matrix(int matrix[], int rows, int columns, int my_rank) {
+        printf("Rank %d ", my_rank);
+        int i, j;
+        for (i = 0; i < rows; i++){ 
+            printf("%4.1d ", matrix[i]);
          }
-      }
-   }
-
-   /* need to gather or reduce? then print matrix with new shortest path */
-
+        printf("\n");
 }
+
+// void Shortest_path_floyd(int graph[], int n, int my_rank, int p, MPI_Comm comm){
+//    //printf("Rank %d ", my_rank);
+//    int i, j, k;
+//    for(i=0; i< n-1; i++){
+//       for(j=0; j< n-1; j++){
+//          for(k=0; k< n-1; k++){
+//             graph[j*n +k]= min(graph[i*n+j], graph[i*n+k] + graph[k*n+j]);
+//          }
+//       }
+//    }
+
+//    /* need to gather or reduce? then print matrix with new shortest path */
+
+// }
 int min(int a, int b){
    if(a<b)
       return a;
